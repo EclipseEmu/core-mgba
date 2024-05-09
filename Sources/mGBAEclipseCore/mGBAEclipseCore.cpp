@@ -18,6 +18,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string>
+#include <unordered_map>
+#include <sstream>
+#include <algorithm>
 
 void _log(
     struct mLogger* logger,
@@ -42,6 +45,8 @@ struct CoreContext {
     uint32_t videoHeight;
     uint32_t videoWidth;
     uint32_t videoBufferSize;
+    
+    std::unordered_map<std::string, struct mCheatSet *> cheatSets;
 };
 
 #pragma mark - Consts
@@ -52,7 +57,29 @@ static const size_t sampleCount = 1024;
 
 const size_t audioBufferSize = sampleCount * audioSampleRate;
 const EKCoreSetting settings[] = {};
-EKCheatFormat cheatFormats[] = {};
+
+const char *characterSetHexadeciaml = "1234567890ABCDEFabcdef";
+
+EKCheatFormat cheatFormats[] = {
+    {
+        .id = "gba.gameshark",
+        .displayName = "GameShark",
+        .characterSet = EKCoreCheatCharacterSetHexadecimal,
+        .format = "xxxxxxxx xxxxxxxx",
+    },
+    {
+        .id = "gba.actionreplay-max",
+        .displayName = "ActionReplay MAX",
+        .characterSet = EKCoreCheatCharacterSetHexadecimal,
+        .format = "xxxxxxxx xxxxxxxx"
+    },
+    {
+        .id = "gba.codebreaker",
+        .displayName = "CodeBreaker",
+        .characterSet = EKCoreCheatCharacterSetHexadecimal,
+        .format = "xxxxxxxx xxxx",
+    }
+};
 
 #pragma mark - Setup
 
@@ -206,29 +233,65 @@ void playerSetInputs(void* data, uint8_t player, uint32_t inputs)
 
     // FIXME: see about implementing some GPIO-related inputs like gyro and maybe even the solar sensor
     
-    uint32_t keys = 0;
-
-    keys |= ((inputs & EKInputFaceButtonRight) != 0) * (1 << GBA_KEY_A);
-    keys |= ((inputs & EKInputFaceButtonDown) != 0) * (1 << GBA_KEY_B);
-
-    keys |= ((inputs & EKInputShoulderLeft) != 0) * (1 << GBA_KEY_L);
-    keys |= ((inputs & EKInputShoulderRight) != 0) * (1 << GBA_KEY_R);
-
-    keys |= ((inputs & EKInputStartButton) != 0) * (1 << GBA_KEY_START);
-    keys |= ((inputs & EKInputSelectButton) != 0) * (1 << GBA_KEY_SELECT);
-
-    keys |= ((inputs & EKInputDpadUp) != 0) * (1 << GBA_KEY_UP);
-    keys |= ((inputs & EKInputDpadDown) != 0) * (1 << GBA_KEY_DOWN);
-    keys |= ((inputs & EKInputDpadLeft) != 0) * (1 << GBA_KEY_LEFT);
-    keys |= ((inputs & EKInputDpadRight) != 0) * (1 << GBA_KEY_RIGHT);
-
+    uint32_t keys =
+        ((inputs & EKInputFaceButtonRight) != 0) * (1 << GBA_KEY_A) |
+        ((inputs & EKInputFaceButtonDown) != 0) * (1 << GBA_KEY_B) |
+        ((inputs & EKInputShoulderLeft) != 0) * (1 << GBA_KEY_L) |
+        ((inputs & EKInputShoulderRight) != 0) * (1 << GBA_KEY_R) |
+        ((inputs & EKInputStartButton) != 0) * (1 << GBA_KEY_START) |
+        ((inputs & EKInputSelectButton) != 0) * (1 << GBA_KEY_SELECT) |
+        ((inputs & EKInputDpadUp) != 0) * (1 << GBA_KEY_UP) |
+        ((inputs & EKInputDpadDown) != 0) * (1 << GBA_KEY_DOWN) |
+        ((inputs & EKInputDpadLeft) != 0) * (1 << GBA_KEY_LEFT) |
+        ((inputs & EKInputDpadRight) != 0) * (1 << GBA_KEY_RIGHT);
+    
     ctx->core->setKeys(ctx->core, keys);
 }
 
-bool setCheats(void* data, EKCheat* cheats, size_t count)
+bool setCheat(void* data, const char* format, const char *code, bool enabled)
 {
-    // FIXME: add support for cheats
-    return false;
+    CoreContext* ctx = static_cast<CoreContext*>(data);
+    
+    std::string codeStr = code;
+    codeStr.erase(std::remove(codeStr.begin(), codeStr.end(), ' '), codeStr.end());
+    
+    std::stringstream hashKeyBuilder;
+    hashKeyBuilder << format << '$' << codeStr;
+    std::string hashKey = hashKeyBuilder.str();
+    
+    mCheatSet *set = ctx->cheatSets[hashKey];
+    if (set != nullptr) {
+        set->enabled = enabled;
+        return;
+    }
+
+    struct mCheatDevice* device = ctx->core->cheatDevice(ctx->core);
+    set = device->createSet(device, hashKey.c_str());
+
+    size_t size = mCheatSetsSize(&device->cheats);
+    if (size) {
+        set->copyProperties(set, *mCheatSetsGetPointer(&device->cheats, size - 1));
+    }
+    
+    size_t last = 0;
+    size_t next = 0;
+    while ((next = codeStr.find('\n', last)) != std::string::npos) {
+        mCheatAddLine(set, codeStr.substr(last, next - last).c_str(), GBA_CHEAT_AUTODETECT);
+        last = next + 1;
+    }
+    mCheatAddLine(set, codeStr.substr(last).c_str(), GBA_CHEAT_AUTODETECT);
+
+    set->enabled = enabled;
+    ctx->cheatSets[hashKey] = set;
+    mCheatAddSet(device, set);
+    
+    return true;
+}
+
+void clearCheats(void *data) {
+    CoreContext* ctx = static_cast<CoreContext*>(data);
+    mCheatDeviceClear(ctx->core->cheatDevice(ctx->core));
+    ctx->cheatSets.clear();
 }
 }
 
@@ -323,6 +386,7 @@ EKCoreInfo coreInfo = {
         coreContext->videoHeight = videoHeight;
         coreContext->videoWidth = videoWidth;
         coreContext->videoBufferSize = videoHeight * videoWidth * BYTES_PER_PIXEL;
+        coreContext->cheatSets = std::unordered_map<std::string, struct mCheatSet *>();
 
         // setup the core
 
@@ -346,7 +410,8 @@ EKCoreInfo coreInfo = {
         core->playerConnected = eclipsecore::playerConnected;
         core->playerDisconnected = eclipsecore::playerDisconnected;
         core->playerSetInputs = eclipsecore::playerSetInputs;
-        core->setCheats = eclipsecore::setCheats;
+        core->setCheat = eclipsecore::setCheat;
+        core->clearCheats = eclipsecore::clearCheats;
 
         return core;
     }
