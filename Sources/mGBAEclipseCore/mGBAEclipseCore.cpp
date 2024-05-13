@@ -356,13 +356,12 @@ EKCoreInfo coreInfo = {
             return nullptr;
         }
 
-        // FIXME: callback seems to never get called, may be because there is no save path in the config?
         struct mCoreCallbacks mgbaCallbacks = {
-            .context = (void*)callbacks,
+            .context = (void*)coreContext,
             .savedataUpdated = eclipsecore::saveCallback,
         };
         mgbaCore->addCoreCallbacks(mgbaCore, &mgbaCallbacks);
-
+        
         unsigned int videoWidth = 0;
         unsigned int videoHeight = 0;
 
