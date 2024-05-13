@@ -140,14 +140,13 @@ uint8_t* getVideoPointer(void* data, uint8_t* preferredPointer)
 bool start(void* data, const char* const romPath, const char* const savePath)
 {
     CoreContext* ctx = static_cast<CoreContext*>(data);
-
+    ctx->core->opts.savegamePath = strdup(savePath);
+    
     if (!mCoreLoadFile(ctx->core, romPath)) {
         return false;
     }
 
-    if (savePath != nullptr) {
-        mCoreLoadSaveFile(ctx->core, savePath, true);
-    }
+    mCoreLoadSaveFile(ctx->core, savePath, false);
 
     ctx->core->reset(ctx->core);
 
@@ -189,23 +188,24 @@ void executeFrame(void* data, bool willRender)
 
 bool save(void* data, const char* path)
 {
-    return false;
+    CoreContext* ctx = static_cast<CoreContext*>(data);
+    struct VFile* vf = VFileOpen(path, O_CREAT | O_TRUNC | O_RDWR);
+    struct GBA *gba = static_cast<struct GBA *>(ctx->core->board);
+    bool success = GBASavedataClone(&gba->memory.savedata, vf);
+    return success;
 }
 
 void saveCallback(void* data)
 {
     CoreContext* ctx = static_cast<CoreContext*>(data);
-    if (ctx == nullptr) {
-        return;
-    }
-    ctx->callbacks->didSave(nullptr);
+    ctx->callbacks->didSave(ctx->callbacks->callbackContext);
 }
 
 bool saveState(void* data, const char* path)
 {
     CoreContext* ctx = static_cast<CoreContext*>(data);
-    struct VFile* vf = VFileOpen(path, O_RDONLY);
-    bool success = mCoreSaveStateNamed(ctx->core, vf, 0);
+    struct VFile* vf = VFileOpen(path, O_CREAT | O_TRUNC | O_RDWR);
+    bool success = mCoreSaveStateNamed(ctx->core, vf, SAVESTATE_SAVEDATA);
     vf->close(vf);
     return success;
 }
@@ -214,7 +214,7 @@ bool loadState(void* data, const char* path)
 {
     CoreContext* ctx = static_cast<CoreContext*>(data);
     struct VFile* vf = VFileOpen(path, O_RDONLY);
-    bool success = mCoreLoadStateNamed(ctx->core, vf, 0);
+    bool success = mCoreLoadStateNamed(ctx->core, vf, SAVESTATE_SAVEDATA);
     vf->close(vf);
     return success;
 }
