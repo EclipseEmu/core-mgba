@@ -1,5 +1,5 @@
 {
-  "originHash" : "58f532402897fad540e2d796705c86f0aaa411e93ab629888b483796e0228324",
+  "originHash" : "1df87e5ae6c63d405b5aefc66751d69eb397ca467aa572912fb3f0c96f781671",
   "pins" : [
     {
       "identity" : "eclipsekit",
@@ -7,7 +7,7 @@
       "location" : "https://github.com/eclipseemu/eclipsekit.git",
       "state" : {
         "branch" : "main",
-        "revision" : "fd377743072beb18fc49af9f3e8dcbe9117e93ef"
+        "revision" : "ff40632228a1833f8bd22408f673f372786490f2"
       }
     }
   ],

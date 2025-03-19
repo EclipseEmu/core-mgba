@@ -295,7 +295,7 @@ void clearCheats(void *data) {
 }
 }
 
-EKCoreInfo coreInfo = {
+const EKCoreInfo mGBACoreInfo = {
     .id = "dev.magnetar.eclipseemu.mgba",
     .name = "mGBA",
     .developer = "Vicki Pfau",
