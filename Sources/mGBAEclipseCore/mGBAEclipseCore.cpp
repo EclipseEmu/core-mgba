@@ -58,6 +58,8 @@ static const size_t sampleCount = 1024;
 const size_t audioBufferSize = sampleCount * audioSampleRate;
 const EKCoreSetting settings[] = {};
 
+const EKSystem supportedSystems[] = { EKSystemGba };
+
 const char *characterSetHexadeciaml = "1234567890ABCDEFabcdef";
 
 EKCheatFormat cheatFormats[] = {
@@ -308,6 +310,9 @@ const EKCoreInfo mGBACoreInfo = {
     },
     .cheatFormatsCount = sizeof(eclipsecore::cheatFormats) / sizeof(EKCheatFormat),
     .cheatFormats = eclipsecore::cheatFormats,
+
+    .supportedSystemsCount = sizeof(eclipsecore::supportedSystems) / sizeof(EKSystem),
+    .supportedSystems = eclipsecore::supportedSystems,
 
     .setup = [](EKSystem system, const EKCoreCallbacks* callbacks) -> EKCore* {
         // do allocations
