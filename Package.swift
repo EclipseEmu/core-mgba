@@ -34,8 +34,7 @@ let package = Package(
     name: "mGBAEclipseCore",
 	platforms: [.iOS(.v14), .macOS(.v13)],
 	products: [
-		.library(name: "mGBA", targets: ["mGBA"]),
-		.library(name: "mGBAEclipseCore", targets: ["mGBAEclipseCore"]),
+		.library(name: "mGBAEclipseCore", type: .dynamic, targets: ["mGBAEclipseCore"]),
 	],
     dependencies: [
         .package(url: "https://github.com/eclipseemu/eclipsekit.git", branch: "main")
@@ -44,7 +43,7 @@ let package = Package(
         .target(
             name: "mGBA",
             sources: [
-                "mGBA/src/core/bitmap-cache.c",
+				"mGBA/src/core/bitmap-cache.c",
                 "mGBA/src/core/cache-set.c",
                 "mGBA/src/core/cheats.c",
                 "mGBA/src/core/config.c",
@@ -147,8 +146,7 @@ let package = Package(
 		.target(
 			name: "mGBAEclipseCore",
 			dependencies: ["mGBA", .product(name: "EclipseKit", package: "eclipsekit")],
-			cSettings: cSettings,
-			swiftSettings: [.interoperabilityMode(.C)]
+			cSettings: cSettings
 		),
     ]
 )
