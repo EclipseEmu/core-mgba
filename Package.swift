@@ -1,31 +1,48 @@
-// swift-tools-version: 5.10
+// swift-tools-version: 6.2
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
+var cSettings: [CSetting] = [
+	.headerSearchPath("mGBA/include"),
+	.headerSearchPath("mGBA/src"),
+
+	.define("M_CORE_GBA"),
+	.define("DISABLE_THREADING"),
+	.define("MGBA_STANDALONE"),
+	.define("HAVE_STRDUP"),
+	.define("HAVE_STRNDUP"),
+	.define("HAVE_STRLCPY"),
+	.define("HAVE_LOCALTIME_R"),
+	.define("HAVE_LOCALE"),
+	.define("HAVE_STRTOF_L"),
+	.define("HAVE_SNPRINTF_L"),
+	.define("HAVE_SETLOCALE"),
+	.define("HAVE_XLOCALE"),
+	.define("BUILD_STATIC"),
+
+	.unsafeFlags([
+		"-Wall",
+		"-Wextra",
+		"-Wno-missing-field-initializers",
+		"-Werror=implicit-function-declaration",
+		"-Werror=implicit-int"
+	]),
+]
+
 let package = Package(
     name: "mGBAEclipseCore",
-    products: [
-        .library(
-            name: "mGBAEclipseCore",
-            type: .dynamic,
-            targets: ["mGBAEclipseCore"]),
-    ],
+	platforms: [.iOS(.v14), .macOS(.v13)],
+	products: [
+		.library(name: "mGBA", targets: ["mGBA"]),
+		.library(name: "mGBAEclipseCore", targets: ["mGBAEclipseCore"]),
+	],
     dependencies: [
         .package(url: "https://github.com/eclipseemu/eclipsekit.git", branch: "main")
     ],
     targets: [
         .target(
-            name: "mGBAEclipseCore",
-            dependencies: [
-                .product(name: "EclipseKit", package: "eclipsekit"),
-                "mGBA"
-            ],
-            linkerSettings: [.unsafeFlags(["-fprofile-instr-generate"])]
-        ),
-        .target(
             name: "mGBA",
-            exclude: [],
             sources: [
                 "mGBA/src/core/bitmap-cache.c",
                 "mGBA/src/core/cache-set.c",
@@ -124,32 +141,14 @@ let package = Package(
                 // NOTE: these would be generated files
                 "version.c",
             ],
-            publicHeadersPath: "mGBA/include",
-            cxxSettings: [
-                .headerSearchPath("mGBA/include"),
-                .headerSearchPath("mGBA/src"),
-                .define("M_CORE_GBA"),
-                .define("DISABLE_THREADING"),
-                .define("MGBA_STANDALONE"),
-                .define("HAVE_STRDUP"),
-                .define("HAVE_STRNDUP"),
-                .define("HAVE_STRLCPY"),
-                .define("HAVE_LOCALTIME_R"),
-                .define("HAVE_LOCALE"),
-                .define("HAVE_STRTOF_L"),
-                .define("HAVE_SNPRINTF_L"),
-                .define("HAVE_SETLOCALE"),
-                .define("HAVE_XLOCALE"),
-                .define("BUILD_STATIC"),
-                .unsafeFlags([
-                    "-Wall",
-                    "-Wextra",
-                    "-Wno-missing-field-initializers",
-                    "-Werror=implicit-function-declaration",
-                    "-Werror=implicit-int"
-                ]),
-            ]
-        )
-    ],
-    cxxLanguageStandard: .gnucxx11
+            publicHeadersPath: "include",
+			cSettings: cSettings,
+        ),
+		.target(
+			name: "mGBAEclipseCore",
+			dependencies: ["mGBA", .product(name: "EclipseKit", package: "eclipsekit")],
+			cSettings: cSettings,
+			swiftSettings: [.interoperabilityMode(.C)]
+		),
+    ]
 )
