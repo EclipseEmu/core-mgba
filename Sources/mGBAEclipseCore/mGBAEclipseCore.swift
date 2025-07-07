@@ -131,6 +131,16 @@ public final class mGBAEclipseCore: CoreProtocol {
 			throw .allocatingCore
 		}
 
+		mCoreInitConfig(core, nil)
+		var coreOptions = mCoreOptions()
+		coreOptions.useBios = true
+
+		mCoreConfigLoadDefaults(&core.pointee.config, &coreOptions)
+		if (core.pointee.`init`(core) != true) {
+			core.pointee.deinit(core)
+			throw .allocatingCore
+		}
+
 		var videoWidth: UInt32 = 0
 		var videoHeight: UInt32 = 0
 
