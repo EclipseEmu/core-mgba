@@ -57,7 +57,7 @@ func handleSaveCallback(context: UnsafeMutableRawPointer?) {
 	wrapper.takeUnretainedValue().didSave()
 }
 
-public struct mGBAEclipseCore: ~Copyable, CoreProtocol {
+public final class mGBAEclipseCore: CoreProtocol {
 	public typealias VideoRenderer = CoreFrameBufferVideoRenderer
 	public typealias Settings = mGBAEclipseCoreSettings
 
@@ -126,7 +126,7 @@ public struct mGBAEclipseCore: ~Copyable, CoreProtocol {
 		system: System,
 		settings: consuming CoreResolvedSettings<mGBAEclipseCoreSettings>,
 		bridge: consuming any CoreBridgeProtocol
-	) throws(Self.Failure) {
+	) throws(mGBAEclipseCore.Failure) {
 		guard let core = GBACoreCreate() else {
 			throw .allocatingCore
 		}
@@ -186,11 +186,11 @@ public struct mGBAEclipseCore: ~Copyable, CoreProtocol {
 		)
 	}
 	
-	public mutating func setFrameBuffer(to pointer: UnsafeMutableBufferPointer<UInt8>) {
+	public func setFrameBuffer(to pointer: UnsafeMutableBufferPointer<UInt8>) {
 		self.videoBuffer = pointer
 	}
 
-	public mutating func start(romPath: URL, savePath: URL) throws(Self.Failure) {
+	public func start(romPath: URL, savePath: URL) throws(mGBAEclipseCore.Failure) {
 		let savePath = savePath.filePath()
 		core.pointee.opts.savegamePath = strdup(savePath)
 		guard mCoreLoadFile(core, romPath.filePath()) else {
@@ -200,17 +200,17 @@ public struct mGBAEclipseCore: ~Copyable, CoreProtocol {
 		core.pointee.reset(core)
 	}
 
-	public mutating func stop() {}
+	public func stop() {}
 
-	public mutating func play() {}
+	public func play() {}
 
-	public mutating func pause() {}
+	public func pause() {}
 
-	public mutating func reset(kind: CoreResetKind) {
+	public func reset(kind: CoreResetKind) {
 		core.pointee.reset(core)
 	}
 
-	public mutating func step(timestamp: CFAbsoluteTime, willRender: Bool) {
+	public func step(timestamp: CFAbsoluteTime, willRender: Bool) {
 		core.pointee.runFrame(core)
 
 		let left = core.pointee.getAudioChannel(core, 0)
@@ -227,7 +227,7 @@ public struct mGBAEclipseCore: ~Copyable, CoreProtocol {
 		bridge.writeAudioSamples(samples: samples)
 	}
 
-	public func save(to path: URL) async throws(Self.Failure) {
+	public func save(to path: URL) async throws(mGBAEclipseCore.Failure) {
 		guard let vf = VFileOpen(path: path, flags: O_CREAT | O_TRUNC | O_RDWR) else {
 			throw .failedToOpenFile
 		}
@@ -239,7 +239,7 @@ public struct mGBAEclipseCore: ~Copyable, CoreProtocol {
 		}
 	}
 
-	public func saveState(to path: URL) throws(Self.Failure) {
+	public func saveState(to path: URL) throws(mGBAEclipseCore.Failure) {
 		guard let vf = VFileOpen(path: path, flags: O_CREAT | O_TRUNC | O_RDWR) else {
 			throw .failedToOpenFile
 		}
@@ -250,7 +250,7 @@ public struct mGBAEclipseCore: ~Copyable, CoreProtocol {
 		}
 	}
 
-	public mutating func loadState(from path: URL) throws(Self.Failure) {
+	public func loadState(from path: URL) throws(mGBAEclipseCore.Failure) {
 		guard let vf = VFileOpen(path: path, flags: O_RDONLY) else {
 			throw .failedToOpenFile
 		}
@@ -261,11 +261,11 @@ public struct mGBAEclipseCore: ~Copyable, CoreProtocol {
 		}
 	}
 
-	public mutating func playerConnected(to port: UInt8) {}
+	public func playerConnected(to port: UInt8) {}
 
-	public mutating func playerDisconnected(from port: UInt8) {}
+	public func playerDisconnected(from port: UInt8) {}
 
-	public mutating func writeInput(_ delta: CoreInputDelta, for player: UInt8) {
+	public func writeInput(_ delta: CoreInputDelta, for player: UInt8) {
 		var keys: UInt32 = 0
 		keys |= delta.input.contains(.faceButtonRight) ? 1 << GBA_KEY_A.rawValue : 0
 		keys |= delta.input.contains(.faceButtonDown) ? 1 << GBA_KEY_B.rawValue : 0
@@ -280,7 +280,7 @@ public struct mGBAEclipseCore: ~Copyable, CoreProtocol {
 		core.pointee.setKeys(core, keys)
 	}
 	
-	public mutating func setCheat(cheat: CoreCheat, enabled: Bool) {
+	public func setCheat(cheat: CoreCheat, enabled: Bool) {
 		if let set = cheatSets[cheat] {
 			set.pointee.enabled = enabled
 		}
@@ -308,7 +308,7 @@ public struct mGBAEclipseCore: ~Copyable, CoreProtocol {
 		mCheatAddSet(device, set)
 	}
 
-	public mutating func clearCheats() {
+	public func clearCheats() {
 		mCheatDeviceClear(core.pointee.cheatDevice(core))
 		cheatSets.removeAll()
 	}
