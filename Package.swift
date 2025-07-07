@@ -43,7 +43,7 @@ let package = Package(
         .target(
             name: "mGBA",
             sources: [
-                "mGBA/src/core/bitmap-cache.c",
+				"mGBA/src/core/bitmap-cache.c",
                 "mGBA/src/core/cache-set.c",
                 "mGBA/src/core/cheats.c",
                 "mGBA/src/core/config.c",

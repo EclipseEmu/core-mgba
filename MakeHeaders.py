@@ -2,7 +2,7 @@ import os
 import shutil
 
 
-prefix_path = "./header-prefix.h"
+prefix_path = "./Sources/mGBA/header_prefix.h"
 src = "./Sources/mGBA/mGBA/include/"
 dst = "./Sources/mGBA/include/"
 
@@ -10,6 +10,9 @@ try:
     shutil.rmtree(dst)
 except:
     pass
+
+os.makedirs("./Sources/mGBA/include", exist_ok=True)
+shutil.copyfile("./Sources/mGBA/noop_log.h", "./Sources/mGBA/include/noop_log.h")
 
 for root, dirs, files in os.walk(src):
     for file in files:

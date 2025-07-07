@@ -9,7 +9,7 @@ let sampleCount = 1024;
 private extension URL {
 	func filePath() -> String {
 		if #available(iOS 16.0, *) {
-			self.path(percentEncoded: true)
+			self.path(percentEncoded: false)
 		} else {
 			self.path
 		}
@@ -18,6 +18,16 @@ private extension URL {
 
 private func VFileOpen(path: URL, flags: Int32) -> UnsafeMutablePointer<VFile>? {
 	VFileOpen(path.filePath(), flags)
+}
+
+private extension CoreInputDelta {
+	@inlinable
+	internal func setInput(_ keys: inout UInt32, input: CoreInput, flag: UInt32, isPressed: Bool) {
+		let isPressed: UInt32 = isPressed ? 1 : 0
+		keys = self.input.contains(input)
+			? (isPressed * (keys | flag)) + ((isPressed ^ 1) * (keys & ~flag))
+			: keys
+	}
 }
 
 public struct mGBAEclipseCoreSettings: CoreSettings {
@@ -121,12 +131,15 @@ public final class mGBAEclipseCore: CoreProtocol {
 	private let videoBufferSize: UInt32
 	private var videoBuffer: UnsafeMutableBufferPointer<UInt8>!
 	private let samples: UnsafeMutableBufferPointer<Int16>!
+	private var inputState: UInt32 = 0
 
 	public init(
 		system: System,
 		settings: consuming CoreResolvedSettings<mGBAEclipseCoreSettings>,
 		bridge: consuming any CoreBridgeProtocol
 	) throws(mGBAEclipseCore.Failure) {
+		setNoopLoggerAsGlobal();
+
 		guard let core = GBACoreCreate() else {
 			throw .allocatingCore
 		}
@@ -198,12 +211,16 @@ public final class mGBAEclipseCore: CoreProtocol {
 	
 	public func setFrameBuffer(to pointer: UnsafeMutableBufferPointer<UInt8>) {
 		self.videoBuffer = pointer
+		self.videoBuffer.withMemoryRebound(to: color_t.self) { pointer in
+			core.pointee.setVideoBuffer(core, pointer.baseAddress, Int(self.videoWidth))
+		}
 	}
 
 	public func start(romPath: URL, savePath: URL) throws(mGBAEclipseCore.Failure) {
+		let romPath = romPath.filePath()
 		let savePath = savePath.filePath()
 		core.pointee.opts.savegamePath = strdup(savePath)
-		guard mCoreLoadFile(core, romPath.filePath()) else {
+		guard mCoreLoadFile(core, romPath) else {
 			throw .failedToLoadROM
 		}
 		mCoreLoadSaveFile(core, savePath, false)
@@ -276,20 +293,22 @@ public final class mGBAEclipseCore: CoreProtocol {
 	public func playerDisconnected(from port: UInt8) {}
 
 	public func writeInput(_ delta: CoreInputDelta, for player: UInt8) {
-		var keys: UInt32 = 0
-		keys |= delta.input.contains(.faceButtonRight) ? 1 << GBA_KEY_A.rawValue : 0
-		keys |= delta.input.contains(.faceButtonDown) ? 1 << GBA_KEY_B.rawValue : 0
-		keys |= delta.input.contains(.leftShoulder) ? 1 << GBA_KEY_L.rawValue : 0
-		keys |= delta.input.contains(.rightShoulder) ? 1 << GBA_KEY_R.rawValue : 0
-		keys |= delta.input.contains(.start) ? 1 << GBA_KEY_START.rawValue : 0
-		keys |= delta.input.contains(.select) ? 1 << GBA_KEY_SELECT.rawValue : 0
-		keys |= delta.input.contains(.dpad) && delta.isUp ? 1 << GBA_KEY_UP.rawValue : 0
-		keys |= delta.input.contains(.dpad) && delta.isDown ? 1 << GBA_KEY_DOWN.rawValue : 0
-		keys |= delta.input.contains(.dpad) && delta.isLeft ? 1 << GBA_KEY_LEFT.rawValue : 0
-		keys |= delta.input.contains(.dpad) && delta.isRight ? 1 << GBA_KEY_RIGHT.rawValue : 0
+		var keys: UInt32 = self.inputState
+		delta.setInput(&keys, input: .faceButtonRight, flag: 1 << GBA_KEY_A.rawValue, isPressed: delta.isPressed)
+		delta.setInput(&keys, input: .faceButtonDown, flag: 1 << GBA_KEY_B.rawValue, isPressed: delta.isPressed)
+		delta.setInput(&keys, input: .leftShoulder, flag: 1 << GBA_KEY_L.rawValue, isPressed: delta.isPressed)
+		delta.setInput(&keys, input: .rightShoulder, flag: 1 << GBA_KEY_R.rawValue, isPressed: delta.isPressed)
+		delta.setInput(&keys, input: .start, flag: 1 << GBA_KEY_START.rawValue, isPressed: delta.isPressed)
+		delta.setInput(&keys, input: .select, flag: 1 << GBA_KEY_SELECT.rawValue, isPressed: delta.isPressed)
+		delta.setInput(&keys, input: .select, flag: 1 << GBA_KEY_SELECT.rawValue, isPressed: delta.isPressed)
+		delta.setInput(&keys, input: .dpad, flag: 1 << GBA_KEY_UP.rawValue, isPressed: delta.isUp)
+		delta.setInput(&keys, input: .dpad, flag: 1 << GBA_KEY_DOWN.rawValue, isPressed: delta.isDown)
+		delta.setInput(&keys, input: .dpad, flag: 1 << GBA_KEY_LEFT.rawValue, isPressed: delta.isLeft)
+		delta.setInput(&keys, input: .dpad, flag: 1 << GBA_KEY_RIGHT.rawValue, isPressed: delta.isRight)
+		self.inputState = keys
 		core.pointee.setKeys(core, keys)
 	}
-	
+
 	public func setCheat(cheat: CoreCheat, enabled: Bool) {
 		if let set = cheatSets[cheat] {
 			set.pointee.enabled = enabled
