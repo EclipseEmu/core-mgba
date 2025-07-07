@@ -4,38 +4,38 @@
 import PackageDescription
 
 var cSettings: [CSetting] = [
-	.headerSearchPath("mGBA/include"),
-	.headerSearchPath("mGBA/src"),
+    .headerSearchPath("mGBA/include"),
+    .headerSearchPath("mGBA/src"),
 
-	.define("M_CORE_GBA"),
-	.define("DISABLE_THREADING"),
-	.define("MGBA_STANDALONE"),
-	.define("HAVE_STRDUP"),
-	.define("HAVE_STRNDUP"),
-	.define("HAVE_STRLCPY"),
-	.define("HAVE_LOCALTIME_R"),
-	.define("HAVE_LOCALE"),
-	.define("HAVE_STRTOF_L"),
-	.define("HAVE_SNPRINTF_L"),
-	.define("HAVE_SETLOCALE"),
-	.define("HAVE_XLOCALE"),
-	.define("BUILD_STATIC"),
+    .define("M_CORE_GBA"),
+    .define("DISABLE_THREADING"),
+    .define("MGBA_STANDALONE"),
+    .define("HAVE_STRDUP"),
+    .define("HAVE_STRNDUP"),
+    .define("HAVE_STRLCPY"),
+    .define("HAVE_LOCALTIME_R"),
+    .define("HAVE_LOCALE"),
+    .define("HAVE_STRTOF_L"),
+    .define("HAVE_SNPRINTF_L"),
+    .define("HAVE_SETLOCALE"),
+    .define("HAVE_XLOCALE"),
+    .define("BUILD_STATIC"),
 
-	.unsafeFlags([
-		"-Wall",
-		"-Wextra",
-		"-Wno-missing-field-initializers",
-		"-Werror=implicit-function-declaration",
-		"-Werror=implicit-int"
-	]),
+    .unsafeFlags([
+        "-Wall",
+        "-Wextra",
+        "-Wno-missing-field-initializers",
+        "-Werror=implicit-function-declaration",
+        "-Werror=implicit-int",
+    ]),
 ]
 
 let package = Package(
     name: "mGBAEclipseCore",
-	platforms: [.iOS(.v14), .macOS(.v13)],
-	products: [
-		.library(name: "mGBAEclipseCore", type: .dynamic, targets: ["mGBAEclipseCore"]),
-	],
+    platforms: [.iOS(.v14), .macOS(.v13)],
+    products: [
+        .library(name: "mGBAEclipseCore", targets: ["mGBA", "mGBAEclipseCore"])
+    ],
     dependencies: [
         .package(url: "https://github.com/eclipseemu/eclipsekit.git", branch: "main")
     ],
@@ -43,7 +43,7 @@ let package = Package(
         .target(
             name: "mGBA",
             sources: [
-				"mGBA/src/core/bitmap-cache.c",
+                "mGBA/src/core/bitmap-cache.c",
                 "mGBA/src/core/cache-set.c",
                 "mGBA/src/core/cheats.c",
                 "mGBA/src/core/config.c",
@@ -141,12 +141,11 @@ let package = Package(
                 "version.c",
             ],
             publicHeadersPath: "include",
-			cSettings: cSettings,
+            cSettings: cSettings,
         ),
-		.target(
-			name: "mGBAEclipseCore",
-			dependencies: ["mGBA", .product(name: "EclipseKit", package: "eclipsekit")],
-			cSettings: cSettings
-		),
+        .target(
+            name: "mGBAEclipseCore",
+            dependencies: ["mGBA", .product(name: "EclipseKit", package: "eclipsekit")],
+        ),
     ]
 )
