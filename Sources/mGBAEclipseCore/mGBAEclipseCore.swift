@@ -20,9 +20,9 @@ private func VFileOpen(path: URL, flags: Int32) -> UnsafeMutablePointer<VFile>? 
 	VFileOpen(path.filePath(), flags)
 }
 
-private extension CoreInputDelta {
+internal extension CoreInputDelta {
 	@inlinable
-	internal func setInput(_ keys: inout UInt32, input: CoreInput, flag: UInt32, isPressed: Bool, useValue: Bool = true) {
+	func setInput(_ keys: inout UInt32, input: CoreInput, flag: UInt32, isPressed: Bool, useValue: Bool = true) {
 		let isPressed: UInt32 = isPressed ? 1 : 0
 		keys = self.input.contains(input) && useValue
 			? (isPressed * (keys | flag)) + ((isPressed ^ 1) * (keys & ~flag))
@@ -293,7 +293,6 @@ public final class mGBAEclipseCore: CoreProtocol {
 	public func playerDisconnected(from port: UInt8) {}
 
 	public func writeInput(_ delta: CoreInputDelta, for player: UInt8) {
-		let oldInputState = self.inputState
 		var keys: UInt32 = self.inputState
 		delta.setInput(&keys, input: .faceButtonRight, flag: 1 << GBA_KEY_A.rawValue, isPressed: delta.isPressed)
 		delta.setInput(&keys, input: .faceButtonDown, flag: 1 << GBA_KEY_B.rawValue, isPressed: delta.isPressed)
@@ -307,7 +306,6 @@ public final class mGBAEclipseCore: CoreProtocol {
 		delta.setInput(&keys, input: .dpad, flag: 1 << GBA_KEY_LEFT.rawValue, isPressed: delta.isLeft, useValue: delta.useX)
 		delta.setInput(&keys, input: .dpad, flag: 1 << GBA_KEY_RIGHT.rawValue, isPressed: delta.isRight, useValue: delta.useX)
 		self.inputState = keys
-		print(delta.input, delta.value.x, delta.value.y)
 		core.pointee.setKeys(core, keys)
 	}
 
