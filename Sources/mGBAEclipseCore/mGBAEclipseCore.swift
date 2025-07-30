@@ -22,9 +22,9 @@ private func VFileOpen(path: URL, flags: Int32) -> UnsafeMutablePointer<VFile>? 
 
 private extension CoreInputDelta {
 	@inlinable
-	internal func setInput(_ keys: inout UInt32, input: CoreInput, flag: UInt32, isPressed: Bool) {
+	internal func setInput(_ keys: inout UInt32, input: CoreInput, flag: UInt32, isPressed: Bool, useValue: Bool = true) {
 		let isPressed: UInt32 = isPressed ? 1 : 0
-		keys = self.input.contains(input)
+		keys = self.input.contains(input) && useValue
 			? (isPressed * (keys | flag)) + ((isPressed ^ 1) * (keys & ~flag))
 			: keys
 	}
@@ -293,6 +293,7 @@ public final class mGBAEclipseCore: CoreProtocol {
 	public func playerDisconnected(from port: UInt8) {}
 
 	public func writeInput(_ delta: CoreInputDelta, for player: UInt8) {
+		let oldInputState = self.inputState
 		var keys: UInt32 = self.inputState
 		delta.setInput(&keys, input: .faceButtonRight, flag: 1 << GBA_KEY_A.rawValue, isPressed: delta.isPressed)
 		delta.setInput(&keys, input: .faceButtonDown, flag: 1 << GBA_KEY_B.rawValue, isPressed: delta.isPressed)
@@ -301,11 +302,12 @@ public final class mGBAEclipseCore: CoreProtocol {
 		delta.setInput(&keys, input: .start, flag: 1 << GBA_KEY_START.rawValue, isPressed: delta.isPressed)
 		delta.setInput(&keys, input: .select, flag: 1 << GBA_KEY_SELECT.rawValue, isPressed: delta.isPressed)
 		delta.setInput(&keys, input: .select, flag: 1 << GBA_KEY_SELECT.rawValue, isPressed: delta.isPressed)
-		delta.setInput(&keys, input: .dpad, flag: 1 << GBA_KEY_UP.rawValue, isPressed: delta.isUp)
-		delta.setInput(&keys, input: .dpad, flag: 1 << GBA_KEY_DOWN.rawValue, isPressed: delta.isDown)
-		delta.setInput(&keys, input: .dpad, flag: 1 << GBA_KEY_LEFT.rawValue, isPressed: delta.isLeft)
-		delta.setInput(&keys, input: .dpad, flag: 1 << GBA_KEY_RIGHT.rawValue, isPressed: delta.isRight)
+		delta.setInput(&keys, input: .dpad, flag: 1 << GBA_KEY_UP.rawValue, isPressed: delta.isUp, useValue: delta.useY)
+		delta.setInput(&keys, input: .dpad, flag: 1 << GBA_KEY_DOWN.rawValue, isPressed: delta.isDown, useValue: delta.useY)
+		delta.setInput(&keys, input: .dpad, flag: 1 << GBA_KEY_LEFT.rawValue, isPressed: delta.isLeft, useValue: delta.useX)
+		delta.setInput(&keys, input: .dpad, flag: 1 << GBA_KEY_RIGHT.rawValue, isPressed: delta.isRight, useValue: delta.useX)
 		self.inputState = keys
+		print(delta.input, delta.value.x, delta.value.y)
 		core.pointee.setKeys(core, keys)
 	}
 
