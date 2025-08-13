@@ -37,10 +37,14 @@ public struct mGBAEclipseCoreSettings: CoreSettings {
 	)
 
 	public init() {}
-
-	public static func migrate(_ data: Data, from oldVersion: UInt) -> mGBAEclipseCoreSettings {
-		.init()
-	}
+    
+    public static func decode(_ data: Data, version: Int16) throws -> mGBAEclipseCoreSettings {
+        .init()
+    }
+    
+    public func encode() throws -> Data {
+        Data()
+    }
 }
 
 private final class BridgeWrapper: CoreBridgeProtocol {
