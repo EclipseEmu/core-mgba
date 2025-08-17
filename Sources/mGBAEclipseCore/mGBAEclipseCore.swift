@@ -31,10 +31,8 @@ internal extension CoreInputDelta {
 }
 
 public struct mGBAEclipseCoreSettings: CoreSettings {
-	public static var descriptor: CoreSettingsDescriptor<mGBAEclipseCoreSettings> = .init(
-		version: 0,
-		sections: []
-	)
+    public static let currentVersion: Int16 = 0
+    public static let descriptor: CoreSettingsDescriptor<mGBAEclipseCoreSettings> = .init(sections: [])
 
 	public init() {}
     
