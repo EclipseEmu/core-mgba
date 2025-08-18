@@ -91,7 +91,7 @@ public final class mGBAEclipseCore: CoreProtocol {
 
 	public static func features(for system: EclipseKit.System) -> EclipseKit.CoreFeatures {
 		guard system == .gba else { return [] }
-		return [.cheats, .saving, .saveStates]
+        return [.cheats, .saving, .saveStates, .softReset]
 	}
 	
 	public static func cheatFormats(for system: System) -> [CoreCheatFormat] {
@@ -235,7 +235,7 @@ public final class mGBAEclipseCore: CoreProtocol {
 
 	public func pause() {}
 
-	public func reset(kind: CoreResetKind) {
+	public func reset() {
 		core.pointee.reset(core)
 	}
 
