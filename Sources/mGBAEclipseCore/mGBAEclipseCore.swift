@@ -261,7 +261,9 @@ public final class mGBAEclipseCore: CoreProtocol {
         bridge.writeAudioSamples(samples: samples)
     }
 
-    public func save(to path: URL) async throws(mGBAEclipseCore.Failure) {
+    public func save(to path: URL, isolation: isolated (any Actor)? = #isolation)
+        async throws(mGBAEclipseCore.Failure)
+    {
         guard let vf = VFileOpen(path: path, flags: O_CREAT | O_TRUNC | O_RDWR) else {
             throw .failedToOpenFile
         }
