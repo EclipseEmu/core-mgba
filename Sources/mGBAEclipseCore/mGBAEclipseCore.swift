@@ -95,7 +95,7 @@ public final class mGBAEclipseCore: CoreProtocol {
 
     public static func features(for system: EclipseKit.System) -> EclipseKit.CoreFeatures {
         guard system == .gba else { return [] }
-        return [.cheats, .saving, .saveStates, .softReset]
+        return [.cheats, .saving, .automaticSaveStorage, .saveStates, .softReset]
     }
 
     public static func cheatFormats(for system: System) -> [CoreCheatFormat] {
